@@ -5,50 +5,20 @@ import java.io.PrintWriter;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.HashSet;
+// import java.util.*;
 
-/**
- * A multithreaded chat room server.  When a client connects the
- * server requests a screen name by sending the client the
- * text "SUBMITNAME", and keeps requesting a name until
- * a unique one is received.  After a client submits a unique
- * name, the server acknowledges with "NAMEACCEPTED".  Then
- * all messages from that client will be broadcast to all other
- * clients that have submitted a unique screen name.  The
- * broadcast messages are prefixed with "MESSAGE ".
- *
- * Because this is just a teaching example to illustrate a simple
- * chat server, there are a few features that have been left out.
- * Two are very useful and belong in production code:
- *
- *     1. The protocol should be enhanced so that the client can
- *        send clean disconnect messages to the server.
- *
- *     2. The server should do some logging.
- */
+import javax.swing.*;
+import java.awt.*;
+import java.awt.event.*;
+import java.util.*;
+
 public class ChatServer {
 
-    /**
-     * The port that the server listens on.
-     */
     private static final int PORT = 9001;
 
-    /**
-     * The set of all names of clients in the chat room.  Maintained
-     * so that we can check that new clients are not registering name
-     * already in use.
-     */
     private static HashSet<String> names = new HashSet<String>();
-
-    /**
-     * The set of all the print writers for all the clients.  This
-     * set is kept so we can easily broadcast messages.
-     */
     private static HashSet<PrintWriter> writers = new HashSet<PrintWriter>();
 
-    /**
-     * The appplication main method, which just listens on a port and
-     * spawns handler threads.
-     */
     public static void main(String[] args) throws Exception {
         System.out.println("The chat server is running.");
         ServerSocket listener = new ServerSocket(PORT);
@@ -61,11 +31,7 @@ public class ChatServer {
         }
     }
 
-    /**
-     * A handler thread class.  Handlers are spawned from the listening
-     * loop and are responsible for a dealing with a single client
-     * and broadcasting its messages.
-     */
+    // deals with single client and broadcasts the message
     private static class Handler extends Thread {
         private String name;
         private Socket socket;
@@ -80,6 +46,58 @@ public class ChatServer {
             this.socket = socket;
         }
 
+        public void readinput(String input){ //application protocol
+            String arr [] = input.split(","); 
+            String cmd = arr[0].trim();
+            String users = arr[1].trim();
+            String msg = arr[2].trim();
+
+            String tosend []= users.split(";");
+
+            System.out.println(cmd +users+ msg);
+            // System.out.println("before");
+            for (int p=0; p<tosend.length ;p++ ) {
+                System.out.println(tosend[p]);
+            }
+
+            // System.out.println("after");
+            ArrayList<String> newNames  = new ArrayList<String>();
+
+            for(String name : names){
+                newNames.add(name); 
+            }
+
+            switch (Integer.parseInt(cmd)){
+                case 0 :
+
+                    int i = 0;
+                    for (PrintWriter writer : writers) {
+                            for(int j=0; j<tosend.length; j++){ 
+
+                                if (newNames.get(i).equals(tosend[j]) ){ 
+                                    System.out.println("receiver: "+newNames.get(i));
+                                    System.out.println("MESSAGE " + name + ": " + msg);
+                                    writer.println("MESSAGE " + name + ": " + msg); 
+                                    continue;
+
+                                }
+
+                            }
+
+                            i++;
+                                
+                        }
+                
+                    break; 
+
+                case 1 :
+                    System.out.println("bleeh");
+                    break;             
+
+            }
+
+        }
+        
         /**
          * Services this thread's client by repeatedly requesting a
          * screen name until a unique one has been submitted, then
@@ -110,6 +128,9 @@ public class ChatServer {
                             names.add(name);
                             break;
                         }
+                        else{
+                            System.out.println("Name already exists. Try another one.");
+                        }
                     }
                 }
 
@@ -126,9 +147,9 @@ public class ChatServer {
                     if (input == null) {
                         return;
                     }
-                    for (PrintWriter writer : writers) {
-                        writer.println("MESSAGE " + name + ": " + input);
-                    }
+
+                    readinput(input); // this is where input is processed for app protocol
+                    
                 }
             } catch (IOException e) {
                 System.out.println(e);
